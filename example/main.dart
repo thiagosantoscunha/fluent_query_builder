@@ -1,33 +1,100 @@
-import 'dart:convert';
-
+import 'dart:io';
 import 'package:fluent_query_builder/fluent_query_builder.dart';
 
 void main() async {
   print('start execution');
   //PostgreSQL connection information
-  final pgsqlCom = DBConnectionInfo(
-    host: '192.168.133.13',
+  final pgsqlComInfo = DBConnectionInfo(
+    enablePsqlAutoSetSearchPath: true,
+    reconnectIfConnectionIsNotOpen: true,
+    host: 'localhost', //192.168.133.13
     database: 'banco_teste',
     driver: ConnectionDriver.pgsql,
-    port: 5432,
+    port: 5434,
     username: 'sisadmin',
     password: 's1sadm1n',
     charset: 'utf8',
-    schemes: ['public'],
+    schemes: ['jubarte', 'public'],
+    setNumberOfProcessorsFromPlatform: false,
+    numberOfProcessors: 8,
   );
 
   //MySQL connection information
-  final mysqlCom = DBConnectionInfo(
-    host: '10.0.0.22',
-    database: 'banco_teste',
+  /*final mysqlComInfo = DBConnectionInfo(
+    host: 'localhost', //10.0.0.22
+    database: 'banco_teste', //banco_teste
     driver: ConnectionDriver.mysql,
-    port: 3306,
+    port: 3307,
     username: 'sisadmin',
     password: 's1sadm1n',
     charset: 'utf8',
-  );
+  );*/
 
-  DbLayer().connect(mysqlCom).then((db) {
+  var db;
+  try {
+    print('try connect');
+    db = await DbLayer().connect(pgsqlComInfo);
+  } catch (e, s) {
+    print('catch connect $e $s');
+  }
+
+  /*Timer.periodic(Duration(milliseconds: 3000), (timer) async {
+    try {
+      print('Print after 3 seconds');
+       await pgsql
+          .select()
+          .from('usuarios')
+          .whereSafe('login', '=', 'isaque.neves')
+          .whereSafe('"idSistema"', '=', '1')
+          .getAsMap()
+          .then((result) => print('pgsql select $result'));*/
+
+  /*var result = await pgsql.select().from('pessoas').whereGroup((QueryBuilder qb) {
+    //return qb.where('nome ilike ?', "'%isaque%'", 'or').where('telefone ilike ?', "'%05%'", 'or');
+    return qb.orWhereSafe('nome', 'ilike', '%isaque%').orWhereSafe('telefone', 'ilike', '%05%');
+  }).get();*/
+
+  var data = <String, dynamic>{'nome': 'transaction', 'telefone': 'test'};
+  var response;
+  await db.transaction((ctx) async {
+    response = await ctx.insertGetAll(returningFields: ['nome', 'telefone']).into('pessoas').setAll(data).exec();
+    response = await ctx.insertGetAll(returningFields: ['nome', 'telefone']).into('pessoas5').setAll(data).exec();
+  });
+
+  print(response);
+
+  //var result = await pgsql.select().from('pessoas').whereRaw("nome ilike '%isaque%'").limit(1).getAsMap();
+  // print('pgsql select ${result[0] is Map}');
+  exit(0);
+  /* 
+    } catch (e, s) {
+      print('catch select $e s $s');
+    }
+  });*/
+
+  /* var mysql;
+  try {
+    print('try connect');
+    mysql = await DbLayer().connect(mysqlComInfo);
+  } catch (e, s) {
+    print('catch connect $e');
+  }
+
+  Timer.periodic(Duration(milliseconds: 600), (timer) async {
+    try {
+      print('Print after 3 seconds');
+      await mysql
+          .select()
+          .from('pessoas')
+          .whereSafe('nome', 'like', '%Sant\'Ana%')
+          .getAsMap()
+          .then((result) => print('mysql select $result'));
+    } catch (e, s) {
+      print('catch select $e');
+    }
+  });*/
+
+  /*DbLayer().connect(mysqlCom).then((db) {
     //mysql insert
     /*db
         .insertGetId()
@@ -42,9 +109,9 @@ void main() async {
         .insertGetId()
         .into('pessoas')
         .setAll({
-      'nome': 'Jon Doe',
-      'telefone': '171171171',
-    })
+          'nome': 'Jon Doe',
+          'telefone': '171171171',
+        })
         .exec()
         .then((result) => print('mysql insertGetId $result'));
 
@@ -54,29 +121,23 @@ void main() async {
         .whereSafe('id', '=', 13)
         .table('pessoas')
         .setAll({
-      'nome': 'Jon Doe',
-      'telefone': '171171171',
-    })
+          'nome': 'Jon Doe',
+          'telefone': '171171171',
+        })
         .exec()
         .then((result) => print('mysql update $result'));
 
     //mysql select
     db
         .select()
-    //.fields(['login', 'idSistema', 's.sigla'])
-    //.fieldRaw('SELECT COUNT(*)')
+        //.fields(['login', 'idSistema', 's.sigla'])
+        //.fieldRaw('SELECT COUNT(*)')
         .from('pessoas')
         .whereSafe('nome', 'like', '%Sant\'Ana%')
-    //.limit(1)
+        //.limit(1)
         .getAsMap()
         .then((result) => print('mysql select $result'));
-
-
-
-  });
-
-
-
+  });*/
 
   /*DbLayer().connect(mysqlCom).then((db) {
     //mysql insert
@@ -130,38 +191,7 @@ void main() async {
         .then((result) => print('mysql select $result'));
   });*/
 
-  var db = await DbLayer().connect(pgsqlCom);
-
-  db.select()
-      .from('pessoas')
-      .where('nome ilike ?', "'%darth%'")
-      .get()
-      .then((res) {
-        print('Ilike simple select');
-        print(res);
-      });
-
-  db.select()
-      .from('pessoas')
-      .where('nome ilike ?', "'%darth%'")
-      .get()
-      .then((res) {
-    print('Ilike simple select');
-    print(res);
-  });
-
-  var res = db.select()
-      .from('pessoas')
-      .orWhereGroup((QueryBuilder qb) {
-        return qb
-            .orWhereSafe('nome', 'ilike' ,"%dart%")
-            .orWhereSafe('telefone', '=', '123123123');
-      })
-  .whereSafe('id', '>', 0)
-      .toSql();
-  print('TOSQL');
-  print(res);
-
+  //
   //pgsql insertGetAll
   /* db
       .insertGetAll()
@@ -175,19 +205,22 @@ void main() async {
   .count()
   .then((result) => print('pgsql count $result'));*/
 
-  /*var data = await db
+  /* var data = await pgsql
       .select()
       .from('pessoas')
       // .whereSafe('nome', 'ilike', '%Sant\'Ana%')
       .orWhereGroup((query) {
         return query.orWhereSafe('nome', 'ilike', '%5%').orWhereSafe('cpf', 'ilike', '%5%');
       })
-      .whereSafe('id', '>', 0)
+     // .whereSafe('id', '>', 0)
+     // .where('id>?', '0')
       .getAsMap();
 
-  data = await db.getRelationFromMaps(data, 'usuarios', 'idPessoa', 'id');
+  print('pgsql select \r\n ${data}');*/
 
-  print('pgsql select \r\n ${jsonEncode(data)}');*/
+  /*data = await db.getRelationFromMaps(data, 'usuarios', 'idPessoa', 'id');
+
+  
 
   // var r = await db.select().from('pessoas').fieldRaw('1').limit(1).exec();
   // var r = await db.raw('select 1').exec();
@@ -236,40 +269,47 @@ void main() async {
       print(onValue);
     });
   });*/
-
+/*
   //example
-  /* DbLayer(factories: [
-    {Usuario: (x) => Usuario.fromMap(x)}
-  ]).connect(com).then((db) {
-    //insert Usuario
-    db.putSingle<Usuario>(Usuario(username: 'jon.doe', password: '123456'));
-    //update Usuario
-    db.update().where('id=?', 20).updateSingle<Usuario>(Usuario(username: 'jon.doe', password: '987'));
-    //select Usuario
-    db.select().from(Usuario().tableName).where('id>?', 2).fetchAll<Usuario>().then((result) {
-      print(result);
-    });
-    //delete Usuario
-    db.delete().deleteSingle<Usuario>(Usuario(id: 20, username: 'jon.doe', password: '123456'));
-  });*/
-  print('end execution');
-  // exit(0);
-}
+  var db = await DbLayer(factories: [
+    {Usuario: (x) => Usuario.fromMap(x)},
+    {Pessoa: (x) => Pessoa.fromMap(x)}
+  ]).connect(pgsqlCom);
 
+  //insert Usuario e pessoa relacionada
+  var user = Usuario(username: 'jon.doe', password: '123456', idPerfil: 3);
+  user.pessoa = Pessoa(nome: 'jon doe', telefone: '717171', cpf: '123');
+
+  //var result = await db.putSingleGetId<Usuario>(user);
+  var result = await db.select().from(Usuario.TABLE_NAME).where('id>?', 2).fetchAll<Usuario>();
+
+  print('insert Usuario $result');
+  //update Usuario
+  //await db.update().where('id=?', 20).updateSingle<Usuario>(Usuario(username: 'jon.doe', password: '987'));
+  //select Usuario
+ 
+  //delete Usuario
+  //await db.delete().deleteSingle<Usuario>(Usuario(id: 20, username: 'jon.doe', password: '123456'));
+
+  print('end execution');
+  // exit(0);*/
+}
+*/
+}
+/*
 class Usuario implements FluentModelBase {
-  Usuario({this.id, this.username, this.password, this.idPerfil});
+  Usuario({this.id, this.username, this.password, this.idPerfil, this.idPessoa});
 
   Usuario.fromMap(Map<String, dynamic> map) {
-    id = map['id'] as int;
-    username = map['username'] as String;
-    password = map['password'] as String;
-    ativo = map['ativo'] as bool;
-    idPerfil = map['idPerfil'] as int;
-  }
-
-  @override
-  Usuario fromMap(Map<String, dynamic> map) {
-    return Usuario.fromMap(map);
+    id = map['id'];
+    username = map['username'];
+    password = map['password'];
+    ativo = map['ativo'];
+    idPerfil = map['idPerfil'];
+    idPessoa = map['idPessoa'];
+    if (map.containsKey('pessoa')) {
+      pessoa = Pessoa.fromMap(map['pessoa']);
+    }
   }
 
   int id;
@@ -277,6 +317,8 @@ class Usuario implements FluentModelBase {
   String password;
   bool ativo;
   int idPerfil;
+  int idPessoa;
+  Pessoa pessoa;
 
   @override
   Map<String, dynamic> toMap() {
@@ -288,15 +330,83 @@ class Usuario implements FluentModelBase {
     data['password'] = password;
     data['ativo'] = ativo;
     data['idPerfil'] = idPerfil;
+    data['idPessoa'] = idPessoa;
+    if (pessoa != null) {
+      data['pessoa'] = pessoa.toMap();
+    }
     return data;
   }
 
-  @override
-  String get tableName => 'usuarios';
+  static const String TABLE_NAME = 'usuarios';
+  static const String ID_KEY = 'id';
+  static const String USERNAME_KEY = 'username';
+  static const String PASSWORD_KEY = 'password';
+  static const String ATIVO_KEY = 'ativo';
+  static const String ID_PERFIL_KEY = 'idPerfil';
+  static const String ID_PESSOA_KEY = 'idPessoa';
 
   @override
-  String get primaryKey => 'id';
+  OrmDefinitions get ormDefinitions {
+    return OrmDefinitions(
+      tableName: TABLE_NAME,
+      primaryKey: ID_KEY,
+      relations: [
+        OrmRelation(Pessoa.TABLE_NAME, 'idPessoa', 'id', OrmRelationType.belongsTo, 'pessoa'),
+      ],
+    );
+  }
 
   @override
-  dynamic get primaryKeyVal => id;
+  String toString() {
+    return toMap().toString();
+  }
 }
+
+class Pessoa implements FluentModelBase {
+  Pessoa({this.id, this.nome, this.telefone, this.cpf});
+
+  Pessoa.fromMap(Map<String, dynamic> map) {
+    id = map['id'];
+    nome = map['nome'];
+    telefone = map['telefone'];
+    cpf = map['cpf'];
+  }
+
+  int id;
+  String nome;
+  String telefone;
+  String cpf;
+
+  @override
+  Map<String, dynamic> toMap() {
+    final data = <String, dynamic>{};
+    if (id != null) {
+      data['id'] = id;
+    }
+    data['nome'] = nome;
+    data['telefone'] = telefone;
+    data['cpf'] = cpf;
+
+    return data;
+  }
+
+  static const String TABLE_NAME = 'pessoas';
+  static const String ID_KEY = 'id';
+  static const String NOME_KEY = 'nome';
+  static const String TELEFONE_KEY = 'telefone';
+  static const String CPF_KEY = 'cpf';
+
+  @override
+  OrmDefinitions get ormDefinitions {
+    return OrmDefinitions(
+      tableName: TABLE_NAME,
+      primaryKey: ID_KEY,
+    );
+  }
+
+  @override
+  String toString() {
+    return toMap().toString();
+  }
+}
+*/

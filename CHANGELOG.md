@@ -41,3 +41,35 @@
 ## 1.1.9
 
 - implemented setAll method for insert and update
+
+## 1.1.10
+
+- fix bug on conbine of orWhereGroup and where
+
+## 1.1.11
+
+- fix bug on orderBy
+
+## 1.1.12
+
+- a reconnection method was implemented in MySqlExecutor, so that the application is more resilient in case MySQL or MariaDB or PostgreSQL is restarted
+
+## 1.1.14
+
+- fix bug on where safe, failure on coted col name
+
+## 1.1.16
+
+- fix bug on where 
+
+## 2.0.0
+
+- refactoring for better resiliency in case of loss of connection to the postgresql server, now has an option called "reconnectIfConnectionIsNotOpen" and "enablePsqlAutoSetSearchPath" in the connection configuration class "DBConnectionInfo"
+
+## 3.0.0
+
+- update to Null safety and fix bugs on whereGroup and fix tests
+
+# 3.0.1
+
+- fix bugs on Complex selection With whereGroup, whereSafe, where and whereRaw

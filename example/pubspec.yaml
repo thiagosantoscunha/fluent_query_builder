@@ -1,0 +1,19 @@
+name: example
+description: 
+version: 1.0.0
+homepage: 
+authors: 
+  - Isaque Neves <insinfo2008@gmail.com> 
+publish_to: none
+
+environment:
+  sdk: '>=2.12.0 <3.0.0'
+
+dependencies:  
+  galileo_postgres: ^3.0.0
+  fluent_query_builder: 
+    path: ../
+
+dev_dependencies:
+  pedantic: ^1.8.0
+  test: ^1.6.0
